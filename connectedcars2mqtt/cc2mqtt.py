@@ -126,7 +126,7 @@ def main_loop(): #pylint: disable=too-many-locals
 
         if not data.ignition.on:
             # Car is switched off, so no need to check distance
-            if time - last_ignition_on < 600:
+            if time.time() - last_ignition_on < 600:
                 delay = 30 # 10 minutes grace time where we do a bit more polling
             else:
                 delay = 300
