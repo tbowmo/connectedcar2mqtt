@@ -106,18 +106,20 @@ def main_loop(): #pylint: disable=too-many-locals
 
     while True:
         data = car.get_full()
+        print(data)
         if old_data is None:
             old_data = copy.deepcopy(data)
-            old_data.battery.voltage = 0
+            old_data.battery.voltage = 1.1
             old_data.battery.time = '0'
 
         differences = DeepDiff(old_data, data)
-
-        if 'type_changes' in differences:
-            for key in differences['type_changes']:
-                new_value = differences['type_changes'][key]['new_value']
-                topic = key.replace('root.', f'{data.licensePlate}/').replace('.', '_')
-                mqtt.publish(topic, str(new_value))
+        print(differences)
+        if 'values_changed' in differences:
+            for key in differences['values_changed']:
+                if 'time' not in key: # Do not publish time events to mqtt
+                    new_value = differences['values_changed'][key]['new_value']
+                    topic = key.replace('root.', f'{data.licensePlate}/').replace('.', '_')
+                    mqtt.publish(topic, new_value, 0, True) # Retain last value received
         else:
             print(f'no change at : {time.time()}')
 
@@ -127,7 +129,7 @@ def main_loop(): #pylint: disable=too-many-locals
             home_pos = (args.latitude, args.longitude)
             car_pos = (data.position.latitude, data.position.longitude)
             distance = geodesic(home_pos, car_pos).km
-            mqtt.publish(f'{data.licensePlate}/distance', distance)
+            mqtt.publish(f'{data.licensePlate}/distance', distance, 0, True)
             # Seconds to sleep depends on distance to home, closer to home the more frequent updates
             if distance > 30:
                 delay = 300

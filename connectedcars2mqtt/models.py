@@ -13,7 +13,7 @@ class VehicleBattery: #pylint: disable=too-few-public-methods
 
     @classmethod
     def create_from_dict(cls, value):
-        """Creates an instance from data in valueionary"""
+        """Creates an instance from data in dictionary"""
         return VehicleBattery(
             dateutil.parser.parse(value['time']),
             float(value['voltage']),
@@ -28,7 +28,7 @@ class VehicleIgnition: #pylint: disable=too-few-public-methods
 
     @classmethod
     def create_from_dict(cls, value):
-        """Creates an instance from data in valueionary"""
+        """Creates an instance from data in dictionary"""
 
         return VehicleIgnition(
             dateutil.parser.parse(value['time']),
@@ -55,7 +55,7 @@ class Vehicle: #pylint: disable=too-few-public-methods, invalid-name
 
     @classmethod
     def create_from_dict(cls, value):
-        """Creates an instance from data in valueionary"""
+        """Creates an instance from data in dictionary"""
 
         vehicle = Vehicle(str(value['licensePlate']))
 

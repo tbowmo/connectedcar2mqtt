@@ -1,14 +1,13 @@
 """Module something"""
+import attr
 from connectedcars import ConnectedCarsClient
 from connectedcars2mqtt.models import Vehicle
 from connectedcars2mqtt.constants import FULL
 
+@attr.s
 class Car:
     """Fetches data from connected cars API and transforms this to a more sensible format"""
-    car_client: ConnectedCarsClient = None
-
-    def __init__(self, client: ConnectedCarsClient):
-        self.car_client = client
+    car_client: ConnectedCarsClient = attr.ib()
 
     def query(self, query) -> dict:
         """Executes the actual query and returns the first vehicle in the list"""
