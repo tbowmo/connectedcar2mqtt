@@ -20,13 +20,14 @@ __version__ = __VERSION__ = "0.0.1"
 def parse_args(argv=None):
     #pylint: disable=line-too-long
     """ Command line argument parser """
+    client = f'{socket.gethostname()}-car'
     parser = argparse.ArgumentParser(prog='connectedCar2mqtt',
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description='chrome2mqtt\n\nConnects your chromecasts to a mqtt-broker',
                                      epilog='See more on https://github.com/tbowmo/chrome2mqtt/README.md'
                                      )
     parser.add_argument('--mqttport', action="store", default=1883, type=int, help="MQTT port on host")
-    parser.add_argument('--mqttclient', action="store", default=socket.gethostname(), help="Client name for mqtt")
+    parser.add_argument('--mqttclient', action="store", default=client, help="Client name for mqtt")
     parser.add_argument('--mqttroot', action="store", default="connectedcar", help="MQTT root topic")
     parser.add_argument('--mqttuser', action="store", default=None, help="MQTT user (if authentication is enabled for the broker)")
     parser.add_argument('--mqttpass', action="store", default=None, help="MQTT password (if authentication is enabled for the broker)")
