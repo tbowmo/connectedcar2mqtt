@@ -104,6 +104,7 @@ def main_loop(): #pylint: disable=too-many-locals
 
     signal.signal(signal.SIGINT, signal_handler)
 
+    last_ignition_on = time.time()
     while True:
         data = car.get_full()
         print(data)
@@ -124,21 +125,26 @@ def main_loop(): #pylint: disable=too-many-locals
             print(f'no change at : {time.time()}')
 
         if not data.ignition.on:
-            delay = 300
+            # Car is switched off, so no need to check distance
+            if time - last_ignition_on < 600:
+                delay = 30 # 10 minutes grace time where we do a bit more polling
+            else:
+                delay = 300
         else:
+            last_ignition_on = time.time()
             home_pos = (args.latitude, args.longitude)
             car_pos = (data.position.latitude, data.position.longitude)
             distance = geodesic(home_pos, car_pos).km
             mqtt.publish(f'{data.licensePlate}/distance', distance, 0, True)
             # Seconds to sleep depends on distance to home, closer to home the more frequent updates
-            if distance > 30:
-                delay = 300
-            elif distance >10:
-                delay = 60
+            if distance > 10:
+                delay = 300  # Distance traveled pr 300 seconds: 7.5km
             elif distance > 5:
-                delay = 30
+                delay = 120  # distance traveled pr 120 seconds: 3Km
+            elif distance > 2:
+                delay = 30  # distance traveled pr 30 seconds: 750m
             else:
-                delay = 10
+                delay = 10  # distance traveled pr 10 seconds: 150m
 
         old_data = copy.deepcopy(data)
         time.sleep(delay)
