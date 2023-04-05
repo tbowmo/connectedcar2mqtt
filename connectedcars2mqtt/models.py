@@ -24,7 +24,7 @@ class VehicleBattery: #pylint: disable=too-few-public-methods
 class VehicleIgnition: #pylint: disable=too-few-public-methods
     """Represents a single voltage measurement at a specific measurement time."""
     time: datetime.datetime = attr.ib()
-    on: bool = attr.ib()
+    on: bool = attr.ib() #pylint: disable=invalid-name
 
     @classmethod
     def create_from_dict(cls, value):

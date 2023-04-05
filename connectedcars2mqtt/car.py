@@ -1,8 +1,8 @@
 """Module something"""
 import attr
 from connectedcars import ConnectedCarsClient
-from connectedcars2mqtt.models import Vehicle
-from connectedcars2mqtt.constants import FULL
+from .models import Vehicle
+from .constants import FULL
 
 @attr.s
 class Car:

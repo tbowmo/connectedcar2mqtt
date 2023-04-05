@@ -12,8 +12,9 @@ from os import path
 from geopy.distance import geodesic
 from deepdiff import DeepDiff
 from connectedcars import ConnectedCarsClient
-from connectedcars2mqtt.car import Car
-from connectedcars2mqtt.mqtt import MQTT
+from .car import Car
+from .mqtt import MQTT
+from .models import Vehicle
 
 __version__ = __VERSION__ = "0.0.1"
 
@@ -65,8 +66,64 @@ def setup_logging(
                             format='%(asctime)s %(name)-16s %(levelname)-8s %(message)s')
 
 
-def main_loop(): #pylint: disable=too-many-locals
-    """Main runner for the programme"""
+def main_loop(car: Car, mqtt: MQTT, home_pos: tuple): #pylint: disable=too-many-locals
+    '''Main loop fetching data periodically'''
+    old_data: Vehicle = car.get_full()
+
+    old_data.battery.voltage = 1.1 # Forces a change to be detected upon start
+
+    delay = 300
+
+    last_ignition_on = time.time()
+    while True:
+        data = car.get_full()
+
+        differences = DeepDiff(old_data, data)
+
+        publish_mqtt(mqtt, data, differences)
+
+        if not data.ignition.on:
+            # Car is switched off, so no need to check distance
+            if time.time() - last_ignition_on < 600:
+                delay = 30 # 10 minutes grace time where we do a bit more polling
+            else:
+                delay = 300
+        else:
+            last_ignition_on = time.time()
+            car_pos = (data.position.latitude, data.position.longitude)
+            distance = geodesic(home_pos, car_pos).km
+            mqtt.publish(f'{data.licensePlate}/distance', distance, 0, True)
+
+            # Seconds to sleep depends on distance to home, closer to home the more frequent updates
+            # Below distances are calculated from a speed of 90km/h
+            # (in reality speed is lower, but better be on the safe side)
+            if distance > 10:
+                delay = 300  # Distance traveled pr 300 seconds: 7.5km
+            elif distance > 5:
+                delay = 120  # distance traveled pr 120 seconds: 3Km
+            elif distance > 2:
+                delay = 30  # distance traveled pr 30 seconds: 750m
+            else:
+                delay = 10  # distance traveled pr 10 seconds: 150m
+
+        old_data = copy.deepcopy(data)
+        time.sleep(delay)
+
+def publish_mqtt(mqtt, data, differences, change_key: str = 'values_changed'):
+    '''publish any changes detected on mqtt'''
+    if change_key in differences:
+        changes = differences[change_key]
+        for key in changes:
+            if 'time' not in key: # Do not publish time events to mqtt
+                print(f'Change detected in {key} publishing to mqtt')
+                new_value = changes[key]['new_value']
+                topic = key.replace('root.', f'{data.licensePlate}/').replace('.', '_')
+                mqtt.publish(topic, new_value, 0, True) # Retain last value received
+    else:
+        print(f'no change at : {time.time()}')
+
+def main():
+    """Main programme"""
     assert sys.version_info >= (3, 6), "You need at least python 3.6 to run this program"
 
     args = parse_args()
@@ -94,9 +151,6 @@ def main_loop(): #pylint: disable=too-many-locals
 
     car = Car(client)
 
-    old_data = None
-
-    delay = 300
 
     def signal_handler(sig, frame): #pylint: disable=unused-argument
         print('Shutting down')
@@ -104,47 +158,5 @@ def main_loop(): #pylint: disable=too-many-locals
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    last_ignition_on = time.time()
-    while True:
-        data = car.get_full()
-        print(data)
-        if old_data is None:
-            old_data = copy.deepcopy(data)
-            old_data.battery.voltage = 1.1
-            old_data.battery.time = '0'
-
-        differences = DeepDiff(old_data, data)
-        print(differences)
-        if 'values_changed' in differences:
-            for key in differences['values_changed']:
-                if 'time' not in key: # Do not publish time events to mqtt
-                    new_value = differences['values_changed'][key]['new_value']
-                    topic = key.replace('root.', f'{data.licensePlate}/').replace('.', '_')
-                    mqtt.publish(topic, new_value, 0, True) # Retain last value received
-        else:
-            print(f'no change at : {time.time()}')
-
-        if not data.ignition.on:
-            # Car is switched off, so no need to check distance
-            if time.time() - last_ignition_on < 600:
-                delay = 30 # 10 minutes grace time where we do a bit more polling
-            else:
-                delay = 300
-        else:
-            last_ignition_on = time.time()
-            home_pos = (args.latitude, args.longitude)
-            car_pos = (data.position.latitude, data.position.longitude)
-            distance = geodesic(home_pos, car_pos).km
-            mqtt.publish(f'{data.licensePlate}/distance', distance, 0, True)
-            # Seconds to sleep depends on distance to home, closer to home the more frequent updates
-            if distance > 10:
-                delay = 300  # Distance traveled pr 300 seconds: 7.5km
-            elif distance > 5:
-                delay = 120  # distance traveled pr 120 seconds: 3Km
-            elif distance > 2:
-                delay = 30  # distance traveled pr 30 seconds: 750m
-            else:
-                delay = 10  # distance traveled pr 10 seconds: 150m
-
-        old_data = copy.deepcopy(data)
-        time.sleep(delay)
+    home_pos = (args.latitude, args.longitude)
+    main_loop(car, mqtt, home_pos)
