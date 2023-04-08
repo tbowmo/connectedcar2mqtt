@@ -1,4 +1,4 @@
-"""Module something"""
+"""Module for retrieving data from connected cars api"""
 from attrs import define, field
 from connectedcars import ConnectedCarsClient
 from .models import Vehicle
@@ -7,6 +7,7 @@ from .constants import FULL
 @define
 class Car:
     """Fetches data from connected cars API and transforms this to a more sensible format"""
+    #pylint: disable=no-member
     car_client: ConnectedCarsClient = field()
     home_pos: tuple[float, float] = field()
 

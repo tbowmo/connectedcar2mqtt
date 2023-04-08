@@ -9,8 +9,6 @@ from geopy.distance import geodesic
 @define
 class BaseModel:
     '''Base model with parser build in'''
-    # time: datetime.datetime = field(default=None)
-    # id: str = field(default=None)
 
     def json_serial(self, obj):
         """JSON serializer for objects not serializable by default json code"""
