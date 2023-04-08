@@ -1,8 +1,10 @@
 """GraphQL model importer"""
+#pylint: disable=invalid-name
 import datetime
 import json
 from attrs import define, field, asdict, fields_dict
 import dateutil.parser
+from geopy.distance import geodesic
 
 @define
 class BaseModel:
@@ -15,7 +17,7 @@ class BaseModel:
 
         if isinstance(obj, (datetime.datetime, datetime.date)):
             return obj.isoformat()
-        raise TypeError ("Type %s not serializable" % type(obj))
+        raise TypeError (f'Type {type(obj)} not serializable')
 
     def json(self):
         '''Return a json serialized presentation of the object'''
@@ -27,7 +29,6 @@ class BaseModel:
         only basic types is converted
         '''
         all_fields = fields_dict(cls)
-        print(all_fields)
         parsed = cls()
         for key in all_fields:
             if key not in values:
@@ -83,6 +84,7 @@ class Vehicle(BaseModel): #pylint: disable=too-few-public-methods, invalid-name
     ignition: VehicleIgnition = field(init=False)
     battery: VehicleBattery = field(init=False)
     licensePlate: str = field(init=False)
+    distance: float = field(init=False)
 
     @classmethod
     def check_value(cls, value, key) -> bool:
@@ -90,18 +92,23 @@ class Vehicle(BaseModel): #pylint: disable=too-few-public-methods, invalid-name
         return key in value and value[key] is not None
 
     @classmethod
-    def create_from_dict(cls, values: dict):
+    def create_from_dict(cls, values: dict, home_position: tuple[float, float] = None):
         """Creates an instance from data in dictionary"""
 
         # Lets create an object with the most basic data structures
-        vehicle = super(Vehicle, cls).create_from_dict(values)
+        vehicle: Vehicle = super(Vehicle, cls).create_from_dict(values)
 
         vehicle.fuelEconomy = float(values['fuelEconomy']) if cls.check_value(
             values, 'fuelEconomy') is True else None
 
         if cls.check_value(values, 'position'):
-            vehicle.position = VehiclePosition.create_from_dict(
+            position = VehiclePosition.create_from_dict(
                 values['position'])
+            vehicle.position = position
+            if home_position is not None:
+                car_position = (position.latitude, position.longitude)
+                vehicle.distance =  geodesic(home_position, car_position).km
+
 
         if cls.check_value(values, 'fuelLevel'):
             vehicle.fuelLevel = VehicleFuelLevel.create_from_dict(

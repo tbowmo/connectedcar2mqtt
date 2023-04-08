@@ -8,6 +8,7 @@ from .constants import FULL
 class Car:
     """Fetches data from connected cars API and transforms this to a more sensible format"""
     car_client: ConnectedCarsClient = field()
+    home_pos: tuple[float, float] = field()
 
     def query(self, query) -> dict:
         """Executes the actual query and returns the first vehicle in the list"""
@@ -17,4 +18,4 @@ class Car:
     def get_full(self) -> Vehicle:
         """Returns the transformed vehicle data"""
         response = self.query(FULL)
-        return Vehicle.create_from_dict(response)
+        return Vehicle.create_from_dict(response, self.home_pos)

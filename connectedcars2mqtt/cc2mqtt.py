@@ -9,7 +9,6 @@ import signal
 import time
 import copy
 from os import path
-from geopy.distance import geodesic
 from deepdiff import DeepDiff
 from connectedcars import ConnectedCarsClient
 from .car import Car
@@ -66,7 +65,7 @@ def setup_logging(
                             format='%(asctime)s %(name)-16s %(levelname)-8s %(message)s')
 
 
-def main_loop(car: Car, mqtt: MQTT, home_pos: tuple): #pylint: disable=too-many-locals
+def main_loop(car: Car, mqtt: MQTT): #pylint: disable=too-many-locals
     '''Main loop fetching data periodically'''
     old_data: Vehicle = car.get_full()
 
@@ -90,10 +89,9 @@ def main_loop(car: Car, mqtt: MQTT, home_pos: tuple): #pylint: disable=too-many-
                 delay = 300
         else:
             last_ignition_on = time.time()
-            car_pos = (data.position.latitude, data.position.longitude)
-            distance = geodesic(home_pos, car_pos).km
-            mqtt.publish(f'{data.licensePlate}/distance', distance, 0, True)
-
+            distance = data.distance
+            if distance is None:
+                distance = 300
             # Seconds to sleep depends on distance to home, closer to home the more frequent updates
             # Below distances are calculated from a speed of 90km/h
             # (in reality speed is lower, but better be on the safe side)
@@ -150,7 +148,9 @@ def main():
         namespace = args.namespace
         )
 
-    car = Car(client)
+
+    home_pos = (args.latitude, args.longitude)
+    car = Car(client, home_pos)
 
     def signal_handler(sig, frame): #pylint: disable=unused-argument
         print('Shutting down')
@@ -158,5 +158,4 @@ def main():
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    home_pos = (args.latitude, args.longitude)
-    main_loop(car, mqtt, home_pos)
+    main_loop(car, mqtt)
