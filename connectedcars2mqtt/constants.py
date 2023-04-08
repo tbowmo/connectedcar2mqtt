@@ -10,24 +10,19 @@ query User {
                 fuelEconomy
                 odometer {
                     odometer
-                    time
                 }
                 fuelLevel {
                     liter
-                    time
                 }
                 position {
                     latitude
                     longitude
-                    time
                 }
                 latestBatteryVoltage {
                     voltage
-                    time
                 }
                 ignition {
                     on
-                    time
                 }
             }
         }

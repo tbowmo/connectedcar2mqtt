@@ -1,13 +1,13 @@
 """Module something"""
-import attr
+from attrs import define, field
 from connectedcars import ConnectedCarsClient
 from .models import Vehicle
 from .constants import FULL
 
-@attr.s
+@define
 class Car:
     """Fetches data from connected cars API and transforms this to a more sensible format"""
-    car_client: ConnectedCarsClient = attr.ib()
+    car_client: ConnectedCarsClient = field()
 
     def query(self, query) -> dict:
         """Executes the actual query and returns the first vehicle in the list"""

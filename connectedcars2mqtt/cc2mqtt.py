@@ -112,6 +112,7 @@ def main_loop(car: Car, mqtt: MQTT, home_pos: tuple): #pylint: disable=too-many-
 def publish_mqtt(mqtt, data, differences, change_key: str = 'values_changed'):
     '''publish any changes detected on mqtt'''
     if change_key in differences:
+        mqtt.publish(f'{data.licensePlate}/json', data.json())
         changes = differences[change_key]
         for key in changes:
             if 'time' not in key: # Do not publish time events to mqtt
@@ -150,7 +151,6 @@ def main():
         )
 
     car = Car(client)
-
 
     def signal_handler(sig, frame): #pylint: disable=unused-argument
         print('Shutting down')

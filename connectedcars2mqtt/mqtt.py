@@ -3,15 +3,14 @@ import logging
 from time import sleep
 import paho.mqtt.client as mqtt
 
-
 class MQTT(mqtt.Client):
     ''' Mqtt handler, takes care of adding a root topic to all topics
         managed by this class, so others do not have to be aware of
         this root topic
     '''
     #pylint: disable=too-many-instance-attributes
-    is_connected = False
-    root = ''
+    __is_connected = False
+    __root = ''
 
     def __init__(self,
                  host='127.0.0.1',
@@ -26,9 +25,9 @@ class MQTT(mqtt.Client):
         self.port = int(port)
         if root != '':
             if root[-1] != '/':
-                self.root = root + '/'
+                self.__root = root + '/'
             else:
-                self.root = root
+                self.__root = root
         self.on_log = self.__on_log
         self.on_connect = self.__on_connect
         self.on_disconnect = self.__on_disconnect
@@ -42,19 +41,19 @@ class MQTT(mqtt.Client):
         ''' subscribe to a topic '''
         if topic not in self.subscriptions:
             self.subscriptions.append(topic)
-        topic = self.root + topic
+        topic = self.__root + topic
         self.log.info('subscribing - %s : %s', topic, len(self.subscriptions))
         super().subscribe(topic, qos)
 
     def message_callback_add(self, sub, callback):
         ''' Add message callbacks, is called when a message matching topic is received '''
         self.subscribe(sub)
-        sub = self.root + sub
+        sub = self.__root + sub
         super().message_callback_add(sub, callback)
 
     def publish(self, topic, payload=None, qos=0, retain=False):  #pylint: disable=arguments-differ
         ''' publish on mqtt, adding root topic to the topic '''
-        topic = self.root + topic
+        topic = self.__root + topic
         if self.is_connected:
             super().publish(topic, payload, qos, retain)
 
