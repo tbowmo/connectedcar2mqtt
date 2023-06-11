@@ -9,9 +9,8 @@ class MQTT(mqtt.Client):
         this root topic
     '''
     #pylint: disable=too-many-instance-attributes
-    __is_connected = False
     __root = ''
-
+    #pylint: disable=too-many-arguments
     def __init__(self,
                  host='127.0.0.1',
                  port=1883,

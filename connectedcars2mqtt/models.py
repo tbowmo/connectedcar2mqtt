@@ -2,6 +2,7 @@
 #pylint: disable=invalid-name
 import datetime
 import json
+from typing import Optional
 from attrs import define, field, asdict, fields_dict
 import dateutil.parser
 from geopy.distance import geodesic
@@ -74,6 +75,7 @@ class VehicleOdometer(BaseModel):
 @define
 class Vehicle(BaseModel): #pylint: disable=too-few-public-methods, invalid-name
     """Represents a vehicle overview."""
+    #pylint: disable=too-many-instance-attributes
 
     fuelEconomy: float = field(init=False)
     position: VehiclePosition = field(init=False)
@@ -90,7 +92,7 @@ class Vehicle(BaseModel): #pylint: disable=too-few-public-methods, invalid-name
         return key in value and value[key] is not None
 
     @classmethod
-    def create_from_dict(cls, values: dict, home_position: tuple[float, float] = None):
+    def create_from_dict(cls, values: dict, home_position: Optional[tuple[float, float]] = None):
         """Creates an instance from data in dictionary"""
 
         # Lets create an object with the most basic data structures

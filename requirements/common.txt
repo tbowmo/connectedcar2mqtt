@@ -1,0 +1,5 @@
+connectedcars
+geopy
+paho-mqtt>=1.6.0
+deepdiff
+attrs
